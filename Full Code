@@ -1,0 +1,145 @@
+import tkinter
+from tkinter import *
+from tkinter import filedialog
+from tkinter.ttk import *
+import time
+import openpyxl
+from openpyxl import Workbook
+import os
+
+
+
+wkbk = Workbook()
+sheetW = wkbk.active
+
+def Browse():
+    progress['value'] = 0
+    clear_Entrybox(eread)
+    eread.insert(0, open_files())
+    ewrite.configure(state='normal')
+    btnBrowse2.configure(state='normal')
+
+def Browse2():
+    clear_Entrybox(ewrite)
+    ewrite.insert(0, output_file())
+
+def clear_Entrybox(e):
+    e.delete(0, END)
+
+def open_files():
+    input = filedialog.askopenfile(initialdir="/", filetype=[("Excel Workbook", "*.xlsx")])
+    return input.name
+
+def output_file():
+    input = filedialog.asksaveasfilename(initialdir="/", filetypes=[("Excel Workbook", "*.xlsx")])
+    return input
+
+def go():
+    #access contents of entry box and open file for reading
+    #call search
+    search(int(en.get()))
+    wkbk.save(checkfiletype())
+    progress['value'] = 0
+    btnDone.configure(bg='green')
+    btnDone.configure(state='normal')
+    return
+
+def done():
+    clear_Entrybox(ewrite)
+    clear_Entrybox(eread)
+    clear_Entrybox(en)
+    btnBrowse2.configure(state='disabled')
+    btnDone.configure(bg='gray')
+
+def checkfiletype():
+    if ewrite.get()[-5:len(ewrite.get())] == ".xlsx":
+        return ewrite.get()
+    else:
+        #ewrite.insert(len(ewrite.get()), ".xlsx")
+        return ewrite.get() + ".xlsx"
+
+def getPoint(item):
+    point = item.split(".")[1]
+    return point
+
+def getStyle(item):
+    style = item.split(".")[0]
+    return str(style)
+
+def search(num):
+    path = eread.get()
+    WorkBook1 = openpyxl.load_workbook(path)
+    sheetR = WorkBook1.active
+    nextavail = 1
+    rows = sheetR.max_row - 6
+    rowstart = 18
+    progstep = 300/(rows-rowstart)
+    for i in range(rowstart, rows):
+        progress['value'] += progstep
+        gui.update_idletasks()
+        # skip if 0 - occurs between PGCs
+        if str(sheetR.cell(row=i, column=1).value) == "0":
+            i += 1
+        else:
+            matches = 0
+            lineList = []
+            #Split item # into style code and size code
+            point = getPoint(item=str(sheetR.cell(row=i, column=3).value))
+            style = getStyle(item=str(sheetR.cell(row=i, column=3).value))
+            for n in range(18, rows):
+                lineList = [i]
+                if (str(style) == getStyle(str(sheetR.cell(row=n, column=3).value))) and i != n:
+                    matches += 1
+                    lineList.append(n)
+                    # print(lineList)
+                if matches > num:
+                    # print("start over")
+                    break
+            if matches <= num - 1:
+                nextavail += len(lineList)
+                writelines(lineList, nextavail, sheetR)
+    sheetW.cell(row=1, column=5).value = sheetR.cell(row=3, column=6).value
+
+
+def writelines(list, nextline, sheetR):
+    for x in range(len(list)):
+        for i in range(1, 6):
+            sheetW.cell(row=nextline, column=i).value = (sheetR.cell(row=list[x], column=i).value)
+            #sheetW.write(nextline, i, str(sheetR.cell(row=list[x], column=i+1).value))
+        nextline += len(list)
+
+
+sheetW.cell(row=1, column=1).value = 'PGC'
+sheetW.cell(row=1, column=2).value = 'Vendor'
+sheetW.cell(row=1, column=3).value = 'Item #'
+sheetW.cell(row=1, column=4).value = 'Description'
+sheetW.cell(row=1, column=5).value = 'Qty'
+
+
+
+
+gui = Tk(className='singledouble')
+gui.geometry("500x300")
+
+btnBrowse = tkinter.Button(gui, text="Browse", command=lambda: Browse(), width=10)
+btnGo = tkinter.Button(gui, text="GO", width=50, borderwidth=3,  command=lambda: go())
+btnGo.place(x=75, y=200)
+btnBrowse.place(x=395, y=50)
+btnBrowse2 = tkinter.Button(gui, text="Browse", command=lambda: Browse2(), width=10, state='disabled')
+btnBrowse2.place(x=395, y=100)
+eread = tkinter.Entry(width=50, borderwidth=5)
+eread.place(x=75, y=50)
+eread.insert(0, "Select .xlsx file")
+ewrite = tkinter.Entry(width=50, borderwidth=5)
+ewrite.place(x=75, y=100)
+ewrite.insert(0, "Choose output file location")
+ewrite.configure(state="disabled")
+en = tkinter.Entry(width=2)
+en.place(x=425, y=150)
+label1 = tkinter.Label(text="Show inventory for shoes where number of sizes is less than or equal to")
+label1.place(x=45, y=150)
+progress = Progressbar(gui, length=300, orient=HORIZONTAL, mode='determinate')
+progress.place(x=75, y=250)
+btnDone = tkinter.Button(gui, text="Done", width=5, state='disabled', bg='gray', command=lambda: done())
+btnDone.place(x=390, y=245)
+gui.mainloop()
