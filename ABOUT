@@ -1,0 +1,3 @@
+# svTools
+The Footwear retail chain I work for would frequently request that managers make a list of all single and double stock footwear at our respective stores to redistribute them. Corporate had no way to get this report outside of us going through our stockrooms and manually writing down item #s, descriptions, and sizes of all shoes we were down to one or two sizes in. This application, written in python, uses a basic algorithem and data transformation that allows the user to browse files and select an inventory stock report as the input and select the location of the output file. 
+The application has been downloaded and is being used by two stores in the commpany currently.
